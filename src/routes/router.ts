@@ -1,5 +1,8 @@
 import * as Router from 'koa-router'
-let router = new Router()
+import { DefaultState, DefaultContext } from "koa"
+import config from '../config'
+
+let router = new Router<DefaultState, DefaultContext>({prefix: config.serve.path})
 
 // index
 router.get('/', (ctx) => {
@@ -25,7 +28,8 @@ router.get('/test/test.status', (ctx) => {
 // proxy
 router.get('/proxy', async(ctx) => {
   let { target } = ctx.query
-  let json = await fetch(target).then(res => res.json())
+  console.log(`      <=> ${target}`)
+  let json = await fetch(target as string).then(res => res.json())
   ctx.type = 'json'
   ctx.body = json
 })

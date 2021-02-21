@@ -5,22 +5,26 @@ import * as redisStore from 'koa-redis'
 import * as logger from 'koa-logger'
 import * as serve from 'koa-static'
 import * as cors from 'kcors'
-import * as bodyParser from 'koa-body'
+import * as body from 'koa-body'
 import router from '../routes'
 import config from '../config'
+import { startTask } from '../service/task'
 
 const app = new Koa()
 let appAny: any = app
 appAny.counter = { users: {}, mock: 0 }
 
 app.keys = config.keys
-app.use(session({
-  store: redisStore(config.redis)
-}))
+app.use(
+  session({
+    // @ts-ignore
+    store: redisStore(config.redis)
+  })
+)
 if (process.env.NODE_ENV === 'development' && process.env.TEST_MODE !== 'true') app.use(logger())
 app.use(async (ctx, next) => {
 
-  ctx.set('Access-Control-Allow-Origin', '*');
+  ctx.set('Access-Control-Allow-Origin', '*')
   ctx.set('Access-Control-Allow-Methods', 'POST, GET, PUT, DELETE, OPTIONS')
   ctx.set('Access-Control-Allow-Credentials', 'true')
   await next()
@@ -34,7 +38,7 @@ app.use(cors({
 }))
 app.use(async (ctx, next) => {
   await next()
-  if (typeof ctx.body === 'object' && ctx.body.data !== undefined) {
+  if (typeof ctx.body === 'object' && ctx.body?.data !== undefined) {
     ctx.type = 'json'
     ctx.body = JSON.stringify(ctx.body, undefined, 2)
   }
@@ -50,8 +54,16 @@ app.use(async (ctx, next) => {
 
 app.use(serve('public'))
 app.use(serve('test'))
-app.use(bodyParser({ multipart: true }))
-
+app.use(
+  body({
+    multipart: true,
+    formLimit: '10mb',
+    textLimit: '10mb',
+    jsonLimit: '10mb',
+  }),
+)
 app.use(router.routes())
+
+startTask()
 
 export default app
